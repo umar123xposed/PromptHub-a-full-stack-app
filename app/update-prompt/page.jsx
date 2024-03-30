@@ -1,7 +1,7 @@
 'use client';
 import Form from '@components/Form'
 import { useEffect, useState } from 'react'
-
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation'
 
 const Edit = () => {
@@ -64,7 +64,9 @@ const Edit = () => {
     }
 
   return (
+    
     <Form type='Edit' Post={Post} setPost={setPost} Submit={Submit} handleSubmit={updatePrompt}/>
+    
   )
 }
 
