@@ -1,57 +1,47 @@
-import NextAuth from "next-auth/next";
-import GoogleProvider from "next-auth/providers/google"
-import {connectDB} from "@utils/database"
-import User from "@models/user";
+import NextAuth from 'next-auth';
+import GoogleProvider from 'next-auth/providers/google';
 
+import User from '@models/user';
+import { connectDB } from '@utils/database';
 
-const Handler=NextAuth({
-    providers:[
-        GoogleProvider({
-            clientId: process.env.GOOGLE_ID,
-            clientSecret:process.env.GOOGLE_CLIENT_SECRET
-        })
-    ],
-    async session({session}){
+const handler = NextAuth({
+  providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    })
+  ],
+  callbacks: {
+    async session({ session }) {
+      // store the user id from MongoDB to session
+      const sessionUser = await User.findOne({ email: session.user.email });
+      session.user.id = sessionUser._id.toString();
 
-        const userSession= await User.findOne({
-            email: session.user.email,
-
-        })
-        session.user.id= userSession._id.toString();
-        return session
+      return session;
     },
+    async signIn({ account, profile, user, credentials }) {
+      try {
+        await connectDB();
 
-    async signIn({profile}){
+        // check if user already exists
+        const userExists = await User.findOne({ email: profile.email });
 
-        try{
-            await connectDB();
-
-            //check for the user
-            const userExist= await User.findOne({
-                email:profile.email
-            })
-
-            //if not exist, create one
-            if(!userExist){
-                await User.create({
-                    email:profile.email,
-                    username:profile.name.replace(" ", "").toLowerCase(),
-                    image: profile.pciture
-                })
-
-            }
-            return true;
-
-        }
-        catch(error){
-            console.log(error)
-            return false;
-
+        // if not, create a new document and save user in MongoDB
+        if (!userExists) {
+          await User.create({
+            email: profile.email,
+            username: profile.name.replace(" ", "").toLowerCase(),
+            image: profile.picture,
+          });
         }
 
-
-
-    }
+        return true
+      } catch (error) {
+        console.log("Error checking if user exists: ", error.message);
+        return false
+      }
+    },
+  }
 })
 
-export {Handler as GET, Handler as POST}
+export { handler as GET, handler as POST }
