@@ -56,12 +56,26 @@ export const PATCH = async (request, { params }) => {
 
 // DELETE Request
 export const DELETE = async (request, { params }) => {
+    console.log("Attempting to delete prompt with ID:", params.id);  // Log the prompt ID
+    
     try {
         await connectDB();
-        await Prompt.findByIdAndRemove(params.id);
+        console.log("Connected to database successfully.");
+
+        // Attempt deletion
+        const result = await Prompt.deleteOne({ _id: params.id });
+        
+        console.log("Deletion result:", result);  // Log the deletion result
+        
+        if (result.deletedCount === 0) {
+            console.log("No prompt found to delete.");
+            return new Response("Prompt not found!", { status: 404, headers: corsHeaders });
+        }
 
         return new Response("Successfully Deleted!", { status: 200, headers: corsHeaders });
     } catch (error) {
+        console.error("Error during deletion:", error);  // Log any errors
         return new Response("Failed to delete!", { status: 500, headers: corsHeaders });
     }
 };
+
